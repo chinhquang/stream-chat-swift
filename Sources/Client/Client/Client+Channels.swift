@@ -32,7 +32,7 @@ public extension Client {
     ///   - completion: a completion block with `[Message]`.
     @discardableResult
     func search(query: SearchQuery, _ completion: @escaping Client.Completion<[Message]>) -> Cancellable {
-        request(endpoint: .search(query)) { (result: Result<SearchResponse, ClientError>) in
+        request(endpoint: .search(query: query)) { (result: Result<SearchResponse, ClientError>) in
             completion(result.map(to: \.messages).compactMap({ $0["message"] }))
         }
     }
@@ -68,7 +68,7 @@ public extension Client {
     func queryChannels(query: ChannelsQuery, _ completion: @escaping Client.Completion<[ChannelResponse]>) -> Cancellable {
         watchingChannelsAtomic.flush()
         
-        return request(endpoint: .channels(query)) { [unowned self] (result: Result<ChannelsResponse, ClientError>) in
+        return request(endpoint: .channels(query: query)) { [unowned self] (result: Result<ChannelsResponse, ClientError>) in
             let result = result.map(to: \.channels)
             
             if (query.options.contains(.watch) || query.options.contains(.presence)),

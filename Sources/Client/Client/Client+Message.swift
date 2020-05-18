@@ -18,14 +18,14 @@ public extension Client {
     ///   - completion: a completion block with `MessageResponse`.
     @discardableResult
     func message(withId messageId: String, _ completion: @escaping Client.Completion<MessageResponse>) -> Cancellable {
-        request(endpoint: .message(messageId), completion)
+        request(endpoint: .message(id: messageId), completion)
     }
     
     /// Mark all messages as read.
     /// - Parameter completion: an empty completion block.
     @discardableResult
     func markAllRead(_ completion: @escaping Client.Completion<EmptyData> = { _ in }) -> Cancellable {
-        request(endpoint: .markAllRead, completion)
+        request(endpoint: .markAllRead(), completion)
     }
     
     /// Delete the message.
@@ -34,7 +34,7 @@ public extension Client {
     ///   - completion: a completion block with `MessageResponse`.
     @discardableResult
     func delete(message: Message, _ completion: @escaping Client.Completion<MessageResponse>) -> Cancellable {
-        request(endpoint: .deleteMessage(message), completion)
+        request(endpoint: .delete(message: message), completion)
     }
     
     /// Send a request for reply messages.
@@ -46,7 +46,7 @@ public extension Client {
     func replies(for message: Message,
                  pagination: Pagination,
                  _ completion: @escaping Client.Completion<[Message]>) -> Cancellable {
-        request(endpoint: .replies(message, pagination)) { (result: Result<MessagesResponse, ClientError>) in
+        request(endpoint: .replies(message: message, pagination: pagination)) { (result: Result<MessagesResponse, ClientError>) in
             completion(result.map(to: \.messages))
         }
     }
@@ -67,7 +67,7 @@ public extension Client {
                      to message: Message,
                      _ completion: @escaping Client.Completion<MessageResponse>) -> Cancellable {
         let reaction = Reaction(type: type, score: score, messageId: message.id, extraData: extraData)
-        return request(endpoint: .addReaction(reaction), completion)
+        return request(endpoint: .add(reaction: reaction), completion)
     }
     
     /// Delete a reaction to the message.
@@ -79,7 +79,7 @@ public extension Client {
     func deleteReaction(type: String,
                         from message: Message,
                         _ completion: @escaping Client.Completion<MessageResponse>) -> Cancellable {
-        request(endpoint: .deleteReaction(type, message), completion)
+        request(endpoint: .delete(reactionType: type, of: message), completion)
     }
     
     // MARK: Flag Message
@@ -104,7 +104,7 @@ public extension Client {
             Message.flaggedIds.insert(message.id)
         }
         
-        return toggleFlagMessage(message, endpoint: .flagMessage(message), completion)
+        return toggleFlagMessage(message, endpoint: .flag(message: message), completion)
     }
     
     /// Unflag a message.
@@ -127,7 +127,7 @@ public extension Client {
             Message.flaggedIds.remove(message.id)
         }
         
-        return toggleFlagMessage(message, endpoint: .unflagMessage(message), completion)
+        return toggleFlagMessage(message, endpoint: .unflag(message: message), completion)
     }
     
     private func toggleFlagMessage(_ message: Message,

@@ -32,7 +32,7 @@ public extension Client {
     ///   - completion: a completion block with `[User]`.
     @discardableResult
     func queryUsers(query: UsersQuery, _ completion: @escaping Client.Completion<[User]>) -> Cancellable {
-        request(endpoint: .users(query)) { (result: Result<UsersResponse, ClientError>) in
+        request(endpoint: .users(query: query)) { (result: Result<UsersResponse, ClientError>) in
             completion(result.map(to: \.users))
         }
     }
@@ -43,7 +43,7 @@ public extension Client {
     /// - Parameter completion: a completion block with `[User]`.
     @discardableResult
     func update(users: [User], _ completion: @escaping Client.Completion<[User]>) -> Cancellable {
-        request(endpoint: .updateUsers(users)) { [unowned self] (result: Result<UpdatedUsersResponse, ClientError>) in
+        request(endpoint: .update(users: users)) { [unowned self] (result: Result<UpdatedUsersResponse, ClientError>) in
             var updatedCompletion = completion
             let usersResult = result.map(to: \.users)
             
@@ -79,7 +79,7 @@ public extension Client {
         }
         
         let completion = doBefore(completion) { [unowned self] in self.userAtomic.set($0.currentUser) }
-        return request(endpoint: .muteUser(user), completion)
+        return request(endpoint: .mute(user: user), completion)
     }
     
     /// Unmute a user.
@@ -100,7 +100,7 @@ public extension Client {
             }
         }
         
-        return request(endpoint: .unmuteUser(user), completion)
+        return request(endpoint: .unmute(user: user), completion)
     }
     
     // MARK: Flag User
@@ -115,7 +115,7 @@ public extension Client {
             User.flaggedUsers.insert(user)
         }
         
-        return toggleFlag(user, endpoint: .flagUser(user), completion)
+        return toggleFlag(user, endpoint: .flag(user: user), completion)
     }
     
     /// Unflag a user.
@@ -128,7 +128,7 @@ public extension Client {
             User.flaggedUsers.remove(user)
         }
         
-        return toggleFlag(user, endpoint: .unflagUser(user), completion)
+        return toggleFlag(user, endpoint: .unflag(user: user), completion)
     }
     
     private func toggleFlag(_ user: User,

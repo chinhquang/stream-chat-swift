@@ -114,7 +114,7 @@ public extension Client {
             }
         }
         
-        return request(endpoint: .channel(query), modifiedCompletion)
+        return request(endpoint: .channel(query: query), modifiedCompletion)
     }
     
     /// Loads the initial channel state and watches for changes.
@@ -137,7 +137,7 @@ public extension Client {
     ///   - completion: an empty completion block.
     @discardableResult
     func stopWatching(channel: Channel, _ completion: @escaping Client.Completion<EmptyData> = { _ in }) -> Cancellable {
-        request(endpoint: .stopWatching(channel), completion)
+        request(endpoint: .stopWatching(channel: channel), completion)
     }
     
     /// Hide the channel from queryChannels for the user until a message is added.
@@ -155,7 +155,7 @@ public extension Client {
             }
         }
         
-        return request(endpoint: .hideChannel(channel, user, clearHistory), completion)
+        return request(endpoint: .hide(channel: channel, user: user, clearHistory: clearHistory), completion)
     }
     
     /// Removes the hidden status for a channel.
@@ -165,7 +165,7 @@ public extension Client {
     ///   - completion: an empty completion block.
     @discardableResult
     func show(channel: Channel, _ completion: @escaping Client.Completion<EmptyData> = { _ in }) -> Cancellable {
-        request(endpoint: .showChannel(channel, user), completion)
+        request(endpoint: .show(channel: channel, user: user), completion)
     }
     
     /// Update channel data.
@@ -203,7 +203,7 @@ public extension Client {
             return Subscription.empty
         }
         
-        return request(endpoint: .updateChannel(.init(data: .init(channel))), completion)
+        return request(endpoint: .updateChannel(update: .init(data: .init(channel))), completion)
     }
     
     /// Delete the channel.
@@ -212,7 +212,7 @@ public extension Client {
     ///   - completion: a completion block with `Channel`.
     @discardableResult
     func delete(channel: Channel, _ completion: @escaping Client.Completion<Channel>) -> Cancellable {
-        request(endpoint: .deleteChannel(channel)) { (result: Result<ChannelDeletedResponse, ClientError>) in
+        request(endpoint: .delete(channel: channel)) { (result: Result<ChannelDeletedResponse, ClientError>) in
             completion(result.map(to: \.channel))
         }
     }
@@ -252,7 +252,7 @@ public extension Client {
         }
         
         message.mentionedUsers = mentionedUsers
-        return request(endpoint: .sendMessage(message, channel), completion)
+        return request(endpoint: .send(message: message, to: channel), completion)
     }
     
     /// Send a message action for a given ephemeral message.
@@ -266,7 +266,7 @@ public extension Client {
               for ephemeralMessage: Message,
               to channel: Channel,
               _ completion: @escaping Client.Completion<MessageResponse>) -> Cancellable {
-        request(endpoint: .sendMessageAction(.init(channel: channel, message: ephemeralMessage, action: action)), completion)
+        request(endpoint: .send(MessageAction: .init(channel: channel, message: ephemeralMessage, action: action)), completion)
     }
     
     /// Mark messages in the channel as read.
@@ -281,7 +281,7 @@ public extension Client {
         
         logger?.log("🎫 Mark Read")
         
-        return request(endpoint: .markRead(channel)) { (result: Result<EventResponse, ClientError>) in
+        return request(endpoint: .markRead(channel: channel)) { (result: Result<EventResponse, ClientError>) in
             completion(result.map(to: \.event))
         }
     }
@@ -293,7 +293,7 @@ public extension Client {
     ///   - completion: a completion block with `Event`.
     @discardableResult
     func send(eventType: EventType, to channel: Channel, _ completion: @escaping Client.Completion<Event>) -> Cancellable {
-        request(endpoint: .sendEvent(eventType, channel)) { [unowned self] (result: Result<EventResponse, ClientError>) in
+        request(endpoint: .send(event: eventType, to: channel)) { [unowned self] (result: Result<EventResponse, ClientError>) in
             self.logger?.log("🎫 \(eventType.rawValue)")
             completion(result.map(to: \.event))
         }
@@ -342,7 +342,7 @@ public extension Client {
     func add(members: Set<Member>,
              to channel: Channel,
              _ completion: @escaping Client.Completion<ChannelResponse>) -> Cancellable {
-        request(endpoint: .addMembers(members, channel), completion)
+        request(endpoint: .add(users: Set(members.map { $0.user }), to: channel), completion)
     }
     
     /// Remove a user as a member from the channel.
@@ -390,7 +390,7 @@ public extension Client {
     func remove(members: Set<Member>,
                 from channel: Channel,
                 _ completion: @escaping Client.Completion<ChannelResponse>) -> Cancellable {
-        request(endpoint: .removeMembers(members, channel), completion)
+        request(endpoint: .remove(members: members, of: channel), completion)
     }
     
     // MARK: - User Ban
@@ -417,7 +417,7 @@ public extension Client {
             }
         }
         
-        return request(endpoint: .ban(userBan), completion)
+        return request(endpoint: .ban(userBan: userBan), completion)
     }
     
     // MARK: - Invite Requests
@@ -441,7 +441,7 @@ public extension Client {
     func invite(members: Set<Member>,
                 to channel: Channel,
                 _ completion: @escaping Client.Completion<ChannelResponse>) -> Cancellable {
-        request(endpoint: .invite(members, channel), completion)
+        request(endpoint: .invite(users: members, to: channel), completion)
     }
     
     /// Accept an invite to the channel.
@@ -475,7 +475,7 @@ public extension Client {
                                   channel: Channel,
                                   _ completion: @escaping Client.Completion<ChannelInviteResponse>) -> Cancellable {
         let answer = ChannelInviteAnswer(channel: channel, accept: accept, reject: reject, message: message)
-        return request(endpoint: .inviteAnswer(answer), completion)
+        return request(endpoint: .invite(answer: answer), completion)
     }
     
     // MARK: - Uploading
@@ -495,7 +495,9 @@ public extension Client {
                    channel: Channel,
                    progress: @escaping Client.Progress,
                    completion: @escaping Client.Completion<URL>) -> Cancellable {
-        sendFile(endpoint: .sendImage(data, fileName, mimeType, channel), progress: progress, completion: completion)
+        sendFile(endpoint: .send(image: data, fileName: fileName, mimeType: mimeType, to: channel),
+                 progress: progress,
+                 completion: completion)
     }
     
     /// Upload a file to the channel.
@@ -513,7 +515,7 @@ public extension Client {
                   channel: Channel,
                   progress: @escaping Client.Progress,
                   completion: @escaping Client.Completion<URL>) -> Cancellable {
-        sendFile(endpoint: .sendFile(data, fileName, mimeType, channel), progress: progress, completion: completion)
+        sendFile(endpoint: .send(file: data, fileName: fileName, mimeType: mimeType, to: channel), progress: progress, completion: completion)
     }
     
     private func sendFile(endpoint: Endpoint,
@@ -531,7 +533,7 @@ public extension Client {
     ///   - completion: an empty completion block.
     @discardableResult
     func deleteImage(url: URL, channel: Channel, _ completion: @escaping Client.Completion<EmptyData> = { _ in }) -> Cancellable {
-        request(endpoint: .deleteImage(url, channel), completion)
+        request(endpoint: .delete(image: url, in: channel), completion)
     }
     
     /// Delete a file with a given URL.
@@ -541,6 +543,6 @@ public extension Client {
     ///   - completion: an empty completion block.
     @discardableResult
     func deleteFile(url: URL, channel: Channel, _ completion: @escaping Client.Completion<EmptyData> = { _ in }) -> Cancellable {
-        request(endpoint: .deleteFile(url, channel), completion)
+        request(endpoint: .delete(file: url, in: channel), completion)
     }
 } // swiftlint:disable:this file_length

@@ -8,7 +8,7 @@
 
 import Foundation
 
-struct MultipartFormData {
+struct MultipartFormData: Equatable {
     private static let crlf = "\r\n"
     
     let boundary: String

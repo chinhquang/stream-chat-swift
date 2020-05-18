@@ -35,7 +35,7 @@ public extension Client {
             self.logger?.log("📱 Device added with id: \(deviceId)")
         }
         
-        return request(endpoint: .addDevice(deviceId: deviceId, self.user), completion)
+        return request(endpoint: .add(device: deviceId, user: self.user), completion)
     }
     
     /// Gets a list of user devices.
@@ -47,7 +47,7 @@ public extension Client {
             self.logger?.log("📱 Devices updated")
         }
         
-        return request(endpoint: .devices(user)) { (result: Result<DevicesResponse, ClientError>) in
+        return request(endpoint: .devices(of: user)) { (result: Result<DevicesResponse, ClientError>) in
             completion(result.map(to: \.devices))
         }
     }
@@ -77,6 +77,6 @@ public extension Client {
             self.logger?.log("📱 Device removed with id: \(deviceId)")
         }
         
-        return request(endpoint: .removeDevice(deviceId: deviceId, user), completion)
+        return request(endpoint: .remove(device: deviceId, user: user), completion)
     }
 }

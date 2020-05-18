@@ -51,7 +51,7 @@ extension Client {
         urlSession = setupURLSession()
         logger?.log("Sending a request for a Guest Token...")
         
-        request(endpoint: .guestToken(user)) { [unowned self] (result: Result<TokenResponse, ClientError>) in
+        request(endpoint: .guestToken(user: user)) { [unowned self] (result: Result<TokenResponse, ClientError>) in
             if let response = result.value {
                 self.set(user: response.user, token: response.token, completion)
             } else if let error = result.error {

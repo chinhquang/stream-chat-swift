@@ -93,9 +93,12 @@ extension Client {
             let queryItems = try self.queryItems(for: endpoint).get()
             let url = try requestURL(for: endpoint, queryItems: queryItems).get()
             
-            let urlRequest = try endpoint.isUploading
-                ? encodeRequestForUpload(for: endpoint, url: url).get()
-                : encodeRequest(for: endpoint, url: url).get()
+            let urlRequest: URLRequest
+            if let multipartData = endpoint.multipartFormData {
+                urlRequest = try encodeRequestForUpload(multipartFormData: multipartData, method: endpoint.method, url: url).get()
+            } else {
+                urlRequest = try encodeRequest(for: endpoint, url: url).get()
+            }
             
             task = urlSession.dataTask(with: urlRequest) { [unowned self] in
                 // Parse the response.
@@ -108,7 +111,7 @@ extension Client {
                 }
             }
             
-            logger?.log(task.currentRequest ?? urlRequest, isUploading: endpoint.isUploading)
+            logger?.log(task.currentRequest ?? urlRequest)
             return task
             
         } catch let error as ClientError {
@@ -228,19 +231,21 @@ extension Client {
     
     // MARK: - Upload Files
     
-    private func encodeRequestForUpload(for endpoint: Endpoint, url: URL) -> Result<URLRequest, ClientError> {
-        let multipartFormData: MultipartFormData
-        var urlRequest = URLRequest(url: url)
-        urlRequest.httpMethod = endpoint.method.rawValue
+    private func encodeRequestForUpload(multipartFormData: MultipartFormData,
+                                        method: Endpoint.Method,
+                                        url: URL) -> Result<URLRequest, ClientError> {
         
-        switch endpoint {
-        case let .sendImage(data, fileName, mimeType, _),
-             let .sendFile(data, fileName, mimeType, _):
-            multipartFormData = MultipartFormData(data, fileName: fileName, mimeType: mimeType)
-        default:
-            let errorDescription = "Encoding unexpected endpoint \(endpoint) for a file uploading."
-            return .failure(.unexpectedError(description: errorDescription, error: nil))
-        }
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = method.rawValue
+        
+//        switch endpoint {
+//        case let .sendImage(data, fileName, mimeType, _),
+//             let .sendFile(data, fileName, mimeType, _):
+//            multipartFormData = MultipartFormData(data, fileName: fileName, mimeType: mimeType)
+//        default:
+//            let errorDescription = "Encoding unexpected endpoint \(endpoint) for a file uploading."
+//            return .failure(.unexpectedError(description: errorDescription, error: nil))
+//        }
         
         let data = multipartFormData.multipartFormData
         logger?.log("⏫ Uploading \(data.description)")
